@@ -1,200 +1,265 @@
+import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart'; // Allowed package for custom fonts
+import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() => runApp(const BMICalculatorApp());
+
+class BMIController extends ChangeNotifier {
+  double _height = 150.0;
+  double _weight = 60.0;
+
+  double get height => _height;
+  double get weight => _weight;
+
+  set height(double value) {
+    _height = value;
+    notifyListeners();
+  }
+
+  set weight(double value) {
+    _weight = value;
+    notifyListeners();
+  }
+
+  double get bmi => _weight / pow((_height / 100), 2);
+
+  String get category {
+    final b = bmi;
+    if (b < 18.5) return "Underweight";
+    if (b < 24.9) return "Normal";
+    if (b < 29.9) return "Overweight";
+    return "Obese";
+  }
+
+  Color get categoryColor {
+    final b = bmi;
+    if (b < 18.5) return Colors.blue;
+    if (b < 24.9) return Colors.green;
+    if (b < 29.9) return Colors.orange;
+    return Colors.red;
+  }
+
+  String getRandomDialog() {
+    final dialogs = {
+      "Underweight": [
+        "Kha lo thoda!",
+        "Salman bhai kehti, 'Yeh kya hawa ho?'",
+        "Bro, protein shake le le!",
+        "Akele salad se kaam nahi chalega",
+        "Burger khilaun kya?"
+      ],
+      "Normal": [
+        "Perfect bro, Bilkul Dabangg!",
+        "Fit ho, hit ho!",
+        "Kya baat! Ek number!",
+        "Salman bhai bhi kahe: 'Sahi ja rahe ho'",
+        "Body toh banni chahiye!"
+      ],
+      "Overweight": [
+        "Bas kar bhai, sab kuch kha jaega kya?",
+        "Zyada ho gaya bhai, treadmill dhoondh!",
+        "Moti biceps nahi pet!",
+        "Aaloo kam, salad zyada!",
+        "Dum hai par dher bhi hai!"
+      ],
+      "Obese": [
+        "Kya re bhai, gym kab chalu karein?",
+        "Ye body nahi gola ban gaya!",
+        "Salman bhai bhi confuse ho jaye!",
+        "Chal bhai walk pe!",
+        "Ab bas, pizza ka break!"
+      ]
+    };
+    final list = dialogs[category] ?? ["Bhai kuch toh gadbad hai"];
+    list.shuffle();
+    return list.first;
+  }
+
+  void reset() {
+    _height = 150.0;
+    _weight = 60.0;
+    notifyListeners();
+  }
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class BMICalculatorApp extends StatelessWidget {
+  const BMICalculatorApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Creative Counter',
-      theme: ThemeData(
-        // Using a light theme with subtle adjustments to ensure contrast with gradients
-        brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.light,
+    return ChangeNotifierProvider(
+      create: (_) => BMIController(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: const Color(0xFF0F172A),
         ),
-        useMaterial3: true,
+        home: const BMIScreen(),
       ),
-      home: const InteractiveCounterScreen(),
     );
   }
 }
 
-class InteractiveCounterScreen extends StatefulWidget {
-  const InteractiveCounterScreen({super.key});
-
-  @override
-  State<InteractiveCounterScreen> createState() =>
-      _InteractiveCounterScreenState();
-}
-
-class _InteractiveCounterScreenState extends State<InteractiveCounterScreen> {
-  int _counter = 0;
-  String _currentEmoji = '😐';
-  // Mark as late and initialize in initState to ensure static members are ready.
-  late List<Color> _currentGradientColors;
-
-  // Pre-define a list of emojis for mood progression
-  static const List<String> _emojis = [
-    '😐', // Neutral (0-4)
-    '🙂', // Slightly Happy (5-9)
-    '😄', // Happy (10-14)
-    '🤩', // Excited (15-19)
-    '🥳', // Celebration (20-24)
-    '🚀', // Blast off (25+)
-  ];
-
-  // Pre-define a list of harmonious color pairs for gradients
-  static const List<List<Color>> _gradientColors = [
-    [Color(0xFF8EC5FC), Color(0xFFE0C3FC)], // Blue to Purple
-    [Color(0xFFFFADAD), Color(0xFFFFCCB3)], // Pink to Orange
-    [Color(0xFFB5EAD7), Color(0xFFC7CEEA)], // Green to Light Purple
-    [Color(0xFFF7CAC9), Color(0xFF92A8D1)], // Coral to Steel Blue
-    [Color(0xFFEAD2AC), Color(0xFFF8EDEB)], // Muted Orange to Cream
-    [Color(0xFFFEE140), Color(0xFFFA709A)], // Gold to Pink (Celebration)
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize _currentGradientColors here after the static _gradientColors is surely available.
-    _currentGradientColors = _gradientColors[0];
-  }
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-
-      // Determine the emoji based on the counter value
-      int emojiIndex = (_counter ~/ 5).clamp(0, _emojis.length - 1);
-      _currentEmoji = _emojis[emojiIndex];
-
-      // Determine the gradient colors based on the counter value
-      int gradientIndex = (_counter ~/ 5).clamp(0, _gradientColors.length - 1);
-      _currentGradientColors = _gradientColors[gradientIndex];
-    });
-  }
+class BMIScreen extends StatelessWidget {
+  const BMIScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final controller = Provider.of<BMIController>(context);
+
     return Scaffold(
-      backgroundColor: Colors.transparent, // Make Scaffold transparent
-      extendBodyBehindAppBar: true, // Allow body to go behind app bar
-      appBar: AppBar(
-        title: Text(
-          'Creative Counter',
-          style: GoogleFonts.outfit(
-            color: Colors.white70,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent, // Make app bar blend with background
-      ),
-      body: AnimatedContainer(
-        duration: const Duration(milliseconds: 700), // Smooth transition for background
-        curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: _currentGradientColors,
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              // AnimatedSwitcher for smooth emoji transition
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return ScaleTransition(scale: animation, child: child);
-                },
-                child: Text(
-                  _currentEmoji,
-                  key: ValueKey<String>(_currentEmoji), // Key for animation
-                  style: const TextStyle(fontSize: 100), // Large emoji
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
               ),
-              const SizedBox(height: 20),
-              Text(
-                'Count:',
-                style: GoogleFonts.outfit(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  shadows: <Shadow>[
-                    Shadow(
-                      offset: const Offset(2.0, 2.0),
-                      blurRadius: 3.0,
-                      color: Colors.black.withOpacity(0.3),
-                    ),
-                  ],
-                ),
-              ),
-              // AnimatedSwitcher for smooth counter text transition
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.0, 1.0),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: FadeTransition(opacity: animation, child: child),
-                  );
-                },
-                child: Text(
-                  '$_counter', // Counter value
-                  key: ValueKey<int>(_counter), // Key for animation
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 80, // Larger font size
-                    color: Colors.white,
-                    shadows: <Shadow>[
-                      Shadow(
-                        offset: const Offset(3.0, 3.0),
-                        blurRadius: 5.0,
-                        color: Colors.black.withOpacity(0.5),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat, // Center the FAB
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
             ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: _incrementCounter,
-          tooltip: 'Increment',
-          backgroundColor: Colors.white, // White FAB background
-          // Icon color dynamically matches the starting color of the current gradient
-          foregroundColor: _currentGradientColors.first,
-          shape: const CircleBorder(), // Ensure circular shape
-          child: const Icon(Icons.add, size: 36), // Larger icon
-        ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 20),
+                  const Icon(Icons.fitness_center, color: Colors.amber, size: 60),
+                  const SizedBox(height: 20),
+                  Text(
+                    'BMI Calculator',
+                    style: GoogleFonts.poppins(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  customSlider(
+                    label: 'Height',
+                    unit: 'cm',
+                    value: controller.height,
+                    onChanged: (val) => controller.height = val,
+                    min: 100,
+                    max: 220,
+                  ),
+                  const SizedBox(height: 20),
+                  customSlider(
+                    label: 'Weight',
+                    unit: 'kg',
+                    value: controller.weight,
+                    onChanged: (val) => controller.weight = val,
+                    min: 30,
+                    max: 150,
+                  ),
+                  const SizedBox(height: 30),
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.white.withOpacity(0.05),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Your BMI',
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          controller.bmi.toStringAsFixed(1),
+                          style: GoogleFonts.poppins(
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.amber,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          controller.category,
+                          style: GoogleFonts.poppins(
+                            fontSize: 22,
+                            color: controller.categoryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 500),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            controller.getRandomDialog(),
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: controller.reset,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.amber,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text("Reset"),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget customSlider({
+    required String label,
+    required String unit,
+    required double value,
+    required Function(double) onChanged,
+    required double min,
+    required double max,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '$label: ${value.toStringAsFixed(0)} $unit',
+          style: GoogleFonts.poppins(color: Colors.white70, fontSize: 16),
+        ),
+        Slider(
+          value: value,
+          onChanged: onChanged,
+          min: min,
+          max: max,
+          divisions: (max - min).toInt(),
+          activeColor: Colors.amber,
+          thumbColor: Colors.white,
+        ),
+      ],
     );
   }
 }
